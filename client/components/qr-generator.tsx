@@ -1,4 +1,4 @@
-import QRCode from "qrcode.react";
+import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { useRef } from "react";
@@ -14,13 +14,27 @@ export const QRGenerator = ({ profileId, profileName }: QRGeneratorProps) => {
   const viewUrl = `${window.location.origin}/view/${profileId}`;
 
   const handleDownloadPNG = () => {
-    const canvas = qrRef.current?.querySelector("canvas") as HTMLCanvasElement;
-    if (canvas) {
+    const svg = qrRef.current?.querySelector("svg") as SVGElement;
+    if (!svg) return;
+
+    // Convert SVG to canvas then to PNG
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const img = new Image();
+
+    img.onload = () => {
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx?.drawImage(img, 0, 0);
+
       const link = document.createElement("a");
       link.href = canvas.toDataURL("image/png");
       link.download = `${profileName}-qr-code.png`;
       link.click();
-    }
+    };
+
+    img.src = "data:image/svg+xml;base64," + btoa(svgData);
   };
 
   const handleDownloadSVG = () => {
@@ -46,13 +60,12 @@ export const QRGenerator = ({ profileId, profileName }: QRGeneratorProps) => {
       {/* QR Code Display */}
       <div className="bg-white rounded-xl border border-border p-8 flex justify-center">
         <div ref={qrRef} className="bg-white p-4 rounded-lg">
-          <QRCode
+          <QRCodeSVG
             value={viewUrl}
             size={256}
             level="H"
             includeMargin={true}
             quietZone={10}
-            renderAs="svg"
           />
         </div>
       </div>
